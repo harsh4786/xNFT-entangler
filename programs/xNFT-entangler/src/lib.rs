@@ -309,6 +309,11 @@ pub mod x_nft_entangler {
         Ok(())
 
     }
+
+
+
+
+
 }
 
 #[derive(Accounts)]
@@ -320,18 +325,19 @@ pub struct CreateEntangler<'info> {
     //xNFT holding token account owned by the publisher
     #[account(mut)]
     token_a: Box<Account<'info, TokenAccount>>,
-    //CHECK: verified through CPI to metaplex program
+   
+    ///CHECK: verified throught CPI
     metadata_a: UncheckedAccount<'info>,
-    //CHECK: verified through CPI
+    ///CHECK: verified through CPI
     master_edition_a: UncheckedAccount<'info>,
     //mint of the xNFT
     mint_b: Box<Account<'info, Mint>>,
     //xNFT holding token account owned by the publisher
     #[account(mut)]
     token_b: Box<Account<'info, TokenAccount>>,
-    //CHECK: verified through CPI
+    ///CHECK: verified through CPI
     metadata_b: UncheckedAccount<'info>,
-    //CHECK: verified through CPI
+    /// CHECK: verified through CPI
     master_edition_b: UncheckedAccount<'info>,
     /// CHECK: Not dangerous. Account seeds checked in constraint.
     #[account(mut,seeds=["xnft-entangler".as_bytes(), mint_a.key().as_ref(), mint_b.key().as_ref(), "escrow".as_bytes(), "A".as_bytes()], bump=token_a_escrow_bump)]
@@ -342,7 +348,7 @@ pub struct CreateEntangler<'info> {
     //xNFT pda account of A
     #[account(
         seeds = [
-            "xnft".as_bytes(),
+            "xnft".as_bytes(), 
             master_edition_a.key().as_ref()
         ],
         seeds::program = xnft_program,
@@ -392,7 +398,7 @@ pub struct CreateEntangler<'info> {
 #[derive(Accounts)]
 pub struct UpdateEntangler<'info>{
     authority: Signer<'info>,
-    //CHECK: the current authority can choose anyone for the new authority
+    ///CHECK: the current authority can choose anyone for the new authority
     new_authority: UncheckedAccount<'info>,
 
     #[account(
@@ -411,7 +417,7 @@ pub struct UpdateEntangler<'info>{
 pub struct SwapxNFT<'info>{
     treasury_mint: Box<Account<'info, Mint>>,
     payer: Signer<'info>,
-    //CHECK: verified through CPI
+    ///CHECK: verified through CPI
     #[account(mut)]
     payment_account: UncheckedAccount<'info>,
     /// CHECK: Verified through CPI
