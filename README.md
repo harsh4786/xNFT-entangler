@@ -1,2 +1,3 @@
 # xNFT-entangler
-heavily borrowed from Metaplex's token entangler with some modifications to accomodate xNFTs
+Warning: Unaudited code, use at your own risk!
+Inspired from Metaplex's token entangler with some modifications to accomodate xNFTs
