@@ -179,7 +179,23 @@ pub mod x_nft_entangler {
 
 
     pub fn swap_xnft(ctx: Context<SwapxNFT>) -> Result<()> {
-
+        let treasury_mint = &ctx.accounts.treasury_mint;
+        let payer = &ctx.accounts.payer;
+        let payment_account = &ctx.accounts.payment_account;
+        let payment_transfer_authority = &ctx.accounts.payment_transfer_authority;
+        let token = &ctx.accounts.token;
+        let xnft_mint = &ctx.accounts.xnft_mint;
+        let replacement_token_metadata = &ctx.accounts.replacement_token_metadata;
+        let replacement_token = &ctx.accounts.replacement_token;
+        let replacement_xnft_mint = &ctx.accounts.replacement_xnft_mint;
+        let transfer_authority = &ctx.accounts.transfer_authority;
+        let token_a_escrow = &ctx.accounts.token_a_escrow;
+        let token_b_escrow = &ctx.accounts.token_b_escrow;
+        let xnft_entangler = &mut ctx.accounts.xnft_entangler;
+        let token_program = &ctx.accounts.token_program;
+        let system_program = &ctx.accounts.system_program;
+        let ata_program = &ctx.accounts.ata_program;
+        let rent = &ctx.accounts.rent;
         Ok(())
     }
 }
