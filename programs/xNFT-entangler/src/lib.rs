@@ -1,7 +1,7 @@
 use anchor_lang::{
     prelude::*,
     solana_program::{
-        program::{invoke},
+        program::{invoke, invoke_signed},
     }
 };
 use spl_token::amount_to_ui_amount;
@@ -197,8 +197,8 @@ pub mod x_nft_entangler {
         let ata_program = &ctx.accounts.ata_program;
         let rent = &ctx.accounts.rent;
 
-        require!(token.mint == token_mint.key(), EntanglerError::InvalidMint);
-        let token_mint_supply = token_mint.supply;
+        require!(token.mint == xnft_mint.key(), EntanglerError::InvalidMint);
+        let token_mint_supply = xnft_mint.supply;
         if token.amount != token_mint_supply {
             return Err(EntanglerError::InvalidTokenAmount.into());
         }
@@ -233,20 +233,58 @@ pub mod x_nft_entangler {
         if token.mint == xnft_entangler.master_mint_a {
             swap_from_escrow = token_a_escrow;
             swap_to_escrow = token_b_escrow;
-            assert_metadata_valid(replacement_token_metadata, None, &xnft_entangler.mint_b)?;
+            assert_metadata_valid(replacement_token_metadata, None, &xnft_entangler.master_mint_b)?;
         } else if token.mint == xnft_entangler.master_mint_b {
             swap_from_escrow = token_b_escrow;
             swap_to_escrow = token_a_escrow;
-            assert_metadata_valid(replacement_token_metadata, None, &xnft_entangler.mint_a)?;
+            assert_metadata_valid(replacement_token_metadata, None, &xnft_entangler.master_mint_a)?;
         } else {
             return Err(EntanglerError::InvalidMint.into());
         }
 
-        if replacement_xnft_mint.key() != xnft_entangler.mint_a
-            && replacement_xnft_mint.key() != xnft_entangler.mint_b
+        if replacement_xnft_mint.key() != xnft_entangler.master_mint_a
+            && replacement_xnft_mint.key() != xnft_entangler.master_mint_b
         {
-            return Err(ErrorCode::InvalidMint.into());
+            return Err(EntanglerError::InvalidMint.into());
         }
+
+        invoke(
+            &spl_token::instruction::transfer(
+                token_program.key,
+                &token.key(),
+                &swap_from_escrow.key(),
+                &transfer_authority.key(),
+                &[],
+                token_mint_supply,
+            )?,
+            &[
+                token.to_account_info(),
+                swap_from_escrow.to_account_info(),
+                token_program.to_account_info(),
+                transfer_authority.to_account_info(),
+            ],
+        )?;
+
+        let (replacement_token_mint_supply, _) =
+            get_mint_details(&replacement_xnft_mint.to_account_info())?;
+        invoke_signed(
+            &spl_token::instruction::transfer(
+                token_program.key,
+                &swap_to_escrow.key(),
+                &replacement_token.key(),
+                &xnft_entangler.key(),
+                &[],
+                replacement_token_mint_supply,
+            )?,
+            &[
+                swap_to_escrow.to_account_info(),
+                replacement_token.to_account_info(),
+                token_program.to_account_info(),
+                xnft_entangler.to_account_info(),
+            ],
+            &[&signer_seeds],
+        )?;
+
 
         Ok(())
 
