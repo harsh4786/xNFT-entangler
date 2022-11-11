@@ -233,13 +233,13 @@ pub mod x_nft_entangler {
         if token.mint == xnft_entangler.master_mint_a {
             swap_from_escrow = token_a_escrow;
             swap_to_escrow = token_b_escrow;
-            assert_metadata_valid(replacement_token_metadata, None, &entangled_pair.mint_b)?;
+            assert_metadata_valid(replacement_token_metadata, None, &xnft_entangler.mint_b)?;
         } else if token.mint == xnft_entangler.master_mint_b {
             swap_from_escrow = token_b_escrow;
             swap_to_escrow = token_a_escrow;
-            assert_metadata_valid(replacement_token_metadata, None, &entangled_pair.mint_a)?;
+            assert_metadata_valid(replacement_token_metadata, None, &xnft_entangler.mint_a)?;
         } else {
-            return Err(ErrorCode::InvalidMint.into());
+            return Err(EntanglerError::InvalidMint.into());
         }
 
         if replacement_xnft_mint.key() != xnft_entangler.mint_a
