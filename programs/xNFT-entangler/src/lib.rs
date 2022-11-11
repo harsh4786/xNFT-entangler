@@ -1,11 +1,11 @@
 use anchor_lang::{
     prelude::*,
     solana_program::{
-        program::{invoke, invoke_signed},
+        program::{invoke},
     }
 };
 use spl_token::amount_to_ui_amount;
-use anchor_spl::token::{Mint, Token,TokenAccount, Transfer, FreezeAccount, ThawAccount};
+use anchor_spl::{token::{Mint, Token,TokenAccount, Transfer, FreezeAccount, ThawAccount}, associated_token::AssociatedToken};
 use xnft::{
     program::Xnft as XNFT,
     state::{Xnft}
@@ -165,7 +165,7 @@ pub mod x_nft_entangler {
 
     pub fn update_entangler<'info>(
         ctx: Context<'_,'_,'_,'info, UpdateEntangler<'info>>,
-        price: u64,
+        price: Option<u64>,
         pays_every_time: bool,
     ) -> Result<()> {
         let new_authority = &ctx.accounts.new_authority;
@@ -178,7 +178,7 @@ pub mod x_nft_entangler {
     }
 
 
-    pub fn swap_xnft(ctx: Context<Swap>) -> Result<()> {
+    pub fn swap_xnft(ctx: Context<SwapxNFT>) -> Result<()> {
 
         Ok(())
     }
@@ -245,16 +245,16 @@ pub struct CreateEntangler<'info> {
         payer = payer, 
         space = std::mem::size_of::<XNFTentangler>(),
         seeds = [
-            b"xnft-entangler".as_bytes(),
-            xnft_a.to_account_info().key,
-            xnft_b.to_account_info().key,
+            "xnft-entangler".as_bytes(),
+            xnft_a.to_account_info().key.to_bytes().as_ref(),
+            xnft_b.to_account_info().key.to_bytes().as_ref(),
         ],
         bump
      )]
      xnft_entangler: Account<'info, XNFTentangler>,
 
     /// CHECK: Not dangerous. Account seeds checked in constraint.
-    #[account(mut, seeds=[b"xnft-entangler".as_bytes(),xnft_a.to_account_info().key, xnft_b.to_account_info().key ], bump=_reverse_bump)]
+    #[account(mut, seeds=["xnft-entangler".as_bytes(),xnft_a.to_account_info().key.to_bytes().as_ref(), xnft_b.to_account_info().key.to_bytes().as_ref() ], bump=_reverse_bump)]
     reverse_entangled_xnfts: UncheckedAccount<'info>,
 
     token_program: Program<'info, Token>,
@@ -282,9 +282,37 @@ pub struct UpdateEntangler<'info>{
 }
 
 #[derive(Accounts)]
-pub struct Swap<'info>{
-
+pub struct SwapxNFT<'info>{
+    treasury_mint: Box<Account<'info, Mint>>,
+    payer: Signer<'info>,
+    #[account(mut)]
+    payment_account: UncheckedAccount<'info>,
+    /// CHECK: Verified through CPI
+    payment_transfer_authority: UncheckedAccount<'info>,
+    #[account(mut)]
+    token: Account<'info, TokenAccount>,
+    xnft_mint: Box<Account<'info, Mint>>,
+    /// CHECK: Verified through CPI
+    replacement_token_metadata: UncheckedAccount<'info>,
+    replacement_xnft_mint: Box<Account<'info, Mint>>,
+    /// CHECK: Verified through CPI
+    #[account(mut)]
+    replacement_token: UncheckedAccount<'info>,
+    transfer_authority: Signer<'info>,
+    /// CHECK: Not dangerous. Account seeds checked in constraint.
+    #[account(mut,seeds=["xnft-entangler".as_bytes(), xnft_entangler.master_mint_a.as_ref(), xnft_entangler.master_mint_b.as_ref(), "escrow".as_bytes(), "A".as_bytes()], bump=xnft_entangler.escrow_a_bump)]
+    token_a_escrow: UncheckedAccount<'info>,
+    /// CHECK: Not dangerous. Account seeds checked in constraint.
+    #[account(mut,seeds=["xnft-entangler".as_bytes(), xnft_entangler.master_mint_a.as_ref(), xnft_entangler.master_mint_b.as_ref(), "escrow".as_bytes(), "B".as_bytes()], bump=xnft_entangler.escrow_b_bump)]
+    token_b_escrow: UncheckedAccount<'info>,
+    #[account(mut, seeds=["xnft-entangler".as_bytes(), xnft_entangler.master_mint_a.as_ref(), xnft_entangler.master_mint_b.as_ref()], bump=xnft_entangler.bump, has_one=treasury_mint)]
+    xnft_entangler: Account<'info, XNFTentangler>,
+    token_program: Program<'info, Token>,
+    system_program: Program<'info, System>,
+    ata_program: Program<'info, AssociatedToken>,
+    rent: Sysvar<'info, Rent>,
 }
+
 
 #[account]
 #[derive(Debug)]

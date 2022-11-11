@@ -1,4 +1,4 @@
-use crate::ErrorCode;
+use crate::EntanglerError;
 use anchor_lang::{
     prelude::*,
     solana_program::{
@@ -11,7 +11,7 @@ use anchor_lang::{
 };
 use anchor_spl::token::Token;
 use arrayref::array_ref;
-use mpl_token_metadata::state::Metadata;
+use mpl_token_metadata::state::{Metadata, TokenMetadataAccount};
 use spl_associated_token_account::get_associated_token_address;
 use spl_token::{instruction::initialize_account2, state::Account};
 use std::{convert::TryInto, slice::Iter};
@@ -81,7 +81,7 @@ pub fn assert_metadata_valid(
         ],
     )?;
     if metadata.data_is_empty() {
-        return Err(ErrorCode::MetadataDoesntExist.into());
+        return Err(EntanglerError::MetadataDoesntExist.into());
     }
 
     if let Some(ed) = edition {
@@ -96,7 +96,7 @@ pub fn assert_metadata_valid(
             ],
         )?;
         if ed.data_is_empty() {
-            return Err(ErrorCode::EditionDoesntExist.into());
+            return Err(EntanglerError::EditionDoesntExist.into());
         }
     }
 
@@ -105,7 +105,7 @@ pub fn assert_metadata_valid(
 
 pub fn assert_keys_equal(key1: Pubkey, key2: Pubkey) -> Result<()> {
     if sol_memcmp(key1.as_ref(), key2.as_ref(), PUBKEY_BYTES) != 0 {
-        err!(ErrorCode::PublicKeyMismatch)
+        err!(EntanglerError::PublicKeyMismatch)
     } else {
         Ok(())
     }
@@ -114,7 +114,7 @@ pub fn assert_keys_equal(key1: Pubkey, key2: Pubkey) -> Result<()> {
 pub fn assert_initialized<T: Pack + IsInitialized>(account_info: &AccountInfo) -> Result<T> {
     let account: T = T::unpack_unchecked(&account_info.data.borrow())?;
     if !account.is_initialized() {
-        Err(ErrorCode::UninitializedAccount.into())
+        Err(EntanglerError::UninitializedAccount.into())
     } else {
         Ok(account)
     }
@@ -122,7 +122,7 @@ pub fn assert_initialized<T: Pack + IsInitialized>(account_info: &AccountInfo) -
 
 pub fn assert_owned_by(account: &AccountInfo, owner: &Pubkey) -> Result<()> {
     if account.owner != owner {
-        Err(ErrorCode::IncorrectOwner.into())
+        Err(EntanglerError::IncorrectOwner.into())
     } else {
         Ok(())
     }
@@ -198,9 +198,9 @@ pub fn pay_creator_fees<'a>(
                 let pct = creator.share as u128;
                 let creator_fee = pct
                     .checked_mul(total_fee)
-                    .ok_or(ErrorCode::NumericalOverflow)?
+                    .ok_or(EntanglerError::NumericalOverflow)?
                     .checked_div(100)
-                    .ok_or(ErrorCode::NumericalOverflow)? as u64;
+                    .ok_or(EntanglerError::NumericalOverflow)? as u64;
                 let current_creator_info = next_account_info(remaining_accounts)?;
                 assert_keys_equal(creator.address, *current_creator_info.key)?;
                 if !is_native {
@@ -328,7 +328,7 @@ pub fn create_or_allocate_account_raw<'a>(
 pub fn assert_derivation(program_id: &Pubkey, account: &AccountInfo, path: &[&[u8]]) -> Result<u8> {
     let (key, bump) = Pubkey::find_program_address(path, program_id);
     if key != *account.key {
-        return Err(ErrorCode::DerivedKeyInvalid.into());
+        return Err(EntanglerError::DerivedKeyInvalid.into());
     }
     Ok(bump)
 }
