@@ -196,7 +196,60 @@ pub mod x_nft_entangler {
         let system_program = &ctx.accounts.system_program;
         let ata_program = &ctx.accounts.ata_program;
         let rent = &ctx.accounts.rent;
+
+        require!(token.mint == token_mint.key(), EntanglerError::InvalidMint);
+        let token_mint_supply = token_mint.supply;
+        if token.amount != token_mint_supply {
+            return Err(EntanglerError::InvalidTokenAmount.into());
+        }
+        if replacement_token.data_is_empty() {
+            make_ata(
+                replacement_token.to_account_info(),
+                payer.to_account_info(),
+                replacement_xnft_mint.to_account_info(),
+                payer.to_account_info(),
+                ata_program.to_account_info(),
+                token_program.to_account_info(),
+                system_program.to_account_info(),
+                rent.to_account_info(),
+                &[],
+            )?;
+        }
+
+        assert_is_ata(
+            &replacement_token.to_account_info(),
+            &payer.key(),
+            &replacement_xnft_mint.key(),
+        )?;
+
+        let signer_seeds = [
+            "xnft-entangler".as_bytes(),
+            xnft_entangler.master_mint_a.as_ref(),
+            xnft_entangler.master_mint_b.as_ref(),
+            &[xnft_entangler.bump],
+        ];
+        let swap_from_escrow;
+        let swap_to_escrow;
+        if token.mint == xnft_entangler.master_mint_a {
+            swap_from_escrow = token_a_escrow;
+            swap_to_escrow = token_b_escrow;
+            assert_metadata_valid(replacement_token_metadata, None, &entangled_pair.mint_b)?;
+        } else if token.mint == xnft_entangler.master_mint_b {
+            swap_from_escrow = token_b_escrow;
+            swap_to_escrow = token_a_escrow;
+            assert_metadata_valid(replacement_token_metadata, None, &entangled_pair.mint_a)?;
+        } else {
+            return Err(ErrorCode::InvalidMint.into());
+        }
+
+        if replacement_xnft_mint.key() != xnft_entangler.mint_a
+            && replacement_xnft_mint.key() != xnft_entangler.mint_b
+        {
+            return Err(ErrorCode::InvalidMint.into());
+        }
+
         Ok(())
+
     }
 }
 
