@@ -178,7 +178,7 @@ pub mod x_nft_entangler {
     }
 
 
-    pub fn swap_xnft(ctx: Context<SwapxNFT>) -> Result<()> {
+    pub fn swap_xnft<'info>(ctx: Context<'_, '_, '_, 'info,SwapxNFT<'info>>) -> Result<()> {
         let treasury_mint = &ctx.accounts.treasury_mint;
         let payer = &ctx.accounts.payer;
         let payment_account = &ctx.accounts.payment_account;
@@ -284,7 +284,27 @@ pub mod x_nft_entangler {
             ],
             &[&signer_seeds],
         )?;
-
+        let is_native = treasury_mint.key() == spl_token::native_mint::id();
+        
+        if let Some(price) = xnft_entangler.price { 
+            if !xnft_entangler.paid || xnft_entangler.pays_every_time {
+                pay_creator_fees(
+                    &mut ctx.remaining_accounts.iter(),
+                    replacement_token_metadata,
+                    payment_account,
+                    payment_transfer_authority,
+                    payer,
+                    &treasury_mint.to_account_info(),
+                    &ata_program.to_account_info(),
+                    &token_program.to_account_info(),
+                    &system_program.to_account_info(),
+                    &rent.to_account_info(),
+                    price,
+                    is_native,
+                )?;
+            }
+        }
+        xnft_entangler.paid = true;
 
         Ok(())
 
