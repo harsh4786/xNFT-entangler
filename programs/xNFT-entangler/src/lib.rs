@@ -193,8 +193,7 @@ pub struct CreateEntangler<'info> {
     //xNFT holding token account owned by the publisher
     #[account(mut)]
     token_a: Box<Account<'info, TokenAccount>>,
-    //xNFT pda account of A
-    //CHECK: verified through CPI
+    //CHECK: verified through CPI to metaplex program
     metadata_a: UncheckedAccount<'info>,
     //CHECK: verified through CPI
     master_edition_a: UncheckedAccount<'info>,
@@ -285,6 +284,7 @@ pub struct UpdateEntangler<'info>{
 pub struct SwapxNFT<'info>{
     treasury_mint: Box<Account<'info, Mint>>,
     payer: Signer<'info>,
+    //CHECK: verified through CPI
     #[account(mut)]
     payment_account: UncheckedAccount<'info>,
     /// CHECK: Verified through CPI
